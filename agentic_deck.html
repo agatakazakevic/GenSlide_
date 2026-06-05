@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Deck</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      /* Dark theme - Artisan style */
+      --bg-dark: #0a0a0f;
+      --bg-card: #111118;
+      --bg-card-hover: #1a1a24;
+      --primary: #a855f7;
+      --primary-glow: rgba(168, 85, 247, 0.4);
+      --secondary: #ec4899;
+      --secondary-glow: rgba(236, 72, 153, 0.3);
+      --accent: #06b6d4;
+      --accent-glow: rgba(6, 182, 212, 0.3);
+      --text-white: #ffffff;
+      --text-light: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border-glow: rgba(168, 85, 247, 0.3);
+      --border-subtle: rgba(255,255,255,0.08);
+      --gradient-purple: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #f97316 100%);
+      --gradient-glow: radial-gradient(ellipse at 70% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
+      --shadow-glow: 0 0 60px rgba(168, 85, 247, 0.2), 0 0 100px rgba(236, 72, 153, 0.1);
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+      --title-font: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --body-font: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg-dark); font-family: var(--body-font); -webkit-font-smoothing: antialiased; }
+    .deck { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* Base slide - dark theme with gradient glow */
+    .slide {
+      background: var(--bg-dark);
+      border-radius: 16px;
+      padding: 56px 64px;
+      margin: 32px 0;
+      min-height: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+    /* Atmospheric glow effect */
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60%;
+      height: 60%;
+      background: var(--gradient-glow);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .slide > * { position: relative; z-index: 1; }
+    .slide svg { pointer-events: none; }
+
+    /* Typography - white on dark */
+    .slide h1 {
+      margin: 0;
+      font-family: var(--title-font);
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .slide h1 span.accent { color: var(--primary); }
+    .slide h2 {
+      margin: 0;
+      font-family: var(--title-font);
+      font-size: 2.75rem;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+    }
+    .slide h2 span.accent { color: var(--primary); }
+    .slide h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    .slide h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .slide p {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--text-light);
+      line-height: 1.7;
+    }
+    .slide p.lead {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+    }
+
+    /* Content grid layouts */
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
+      flex: 1;
+    }
+    .content.single { grid-template-columns: 1fr; }
+    .content.thirds { grid-template-columns: repeat(3, 1fr); }
+    .content.sidebar { grid-template-columns: 1fr 1.5fr; }
+    .content.sidebar-right { grid-template-columns: 1.5fr 1fr; }
+
+    /* Lists - minimal style */
+    ul, ol {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+      color: var(--text-light);
+      font-size: 1.125rem;
+      line-height: 1.8;
+    }
+    li {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.6em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    /* Glow cards - Artisan style */
+    .glow-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .glow-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--primary-glow), transparent, var(--secondary-glow));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    .glow-card.pink::before {
+      background: linear-gradient(135deg, var(--secondary-glow), transparent, var(--secondary-glow));
+    }
+    .glow-card.cyan::before {
+      background: linear-gradient(135deg, var(--accent-glow), transparent, var(--accent-glow));
+    }
+    .glow-card.orange::before {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.4), transparent, rgba(249, 115, 22, 0.3));
+    }
+
+    /* Feature cards with icons */
+    .feature-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 20px 24px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .feature-card .icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(168, 85, 247, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .feature-card .icon svg { width: 20px; height: 20px; fill: var(--primary); }
+    .feature-card .text { font-weight: 600; color: var(--text-white); }
+
+    /* Big metrics */
+    .metric {
+      text-align: center;
+      padding: 2rem;
+    }
+    .metric-value {
+      font-size: 4rem;
+      font-weight: 900;
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .metric-label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.75rem;
+    }
+
+    /* Quote card */
+    .quote-card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 48px;
+      position: relative;
+      border: 1px solid var(--border-subtle);
+    }
+    .quote-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 21px;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--primary-glow), transparent 50%, var(--secondary-glow));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    .quote-text {
+      font-size: 1.75rem;
+      font-style: italic;
+      color: var(--text-white);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .quote-author {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Comparison table - dark style */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    th {
+      text-align: left;
+      padding: 1rem;
+      font-weight: 600;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-light);
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* Chart container */
+    .chart-container {
+      width: 100%;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .chart-slot { width: 100%; height: 100%; min-height: 300px; }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    /* Footer */
+    .footer {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      position: absolute;
+      bottom: 1.5rem;
+      right: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Problem cards - 3 column */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .problem-card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      border: 1px solid;
+      border-image: linear-gradient(180deg, var(--border-subtle) 0%, transparent 100%) 1;
+      position: relative;
+    }
+    .problem-card.pink { border-color: rgba(236, 72, 153, 0.3); }
+    .problem-card.orange { border-color: rgba(249, 115, 22, 0.3); }
+    .problem-card.cyan { border-color: rgba(6, 182, 212, 0.3); }
+    .problem-card .icon-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .problem-card.pink .icon-circle { background: rgba(236, 72, 153, 0.15); }
+    .problem-card.orange .icon-circle { background: rgba(249, 115, 22, 0.15); }
+    .problem-card.cyan .icon-circle { background: rgba(6, 182, 212, 0.15); }
+    .problem-card h3 { color: var(--text-white); margin-bottom: 12px; }
+    .problem-card p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
+
+    /* Before/After split */
+    .split-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+    .split-panel {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+    .split-panel h3 {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    /* Flow diagram */
+    .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 16px 24px;
+      border: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+    .flow-step h4 { color: var(--text-white); margin-bottom: 8px; }
+    .flow-step p { color: var(--text-muted); font-size: 0.85rem; }
+    .flow-arrow {
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+
+    /* Layout overrides */
+    .layout-title {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 64px;
+    }
+    .layout-title h1, .layout-title h2 { text-align: center; }
+    .layout-chart .content { grid-template-columns: 1fr 1.5fr; }
+    .layout-big_number { justify-content: center; align-items: center; }
+
+    /* Team cards */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .team-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      gap: 20px;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+    }
+    .team-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--primary-glow), transparent);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+    .team-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .team-info h4 { color: var(--text-white); margin-bottom: 4px; font-size: 1.1rem; }
+    .team-info .role { color: var(--primary); font-weight: 600; margin-bottom: 8px; }
+    .team-info p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide" style="background-color: #0a0a0f; height: 100vh; width: 100vw; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 60px">
+  <div style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px">
+    
+    <div style="margin-bottom: 60px">
+      <h1 style="color: #ffffff; font-size: 48px; font-weight: 700; margin: 0; padding: 0; line-height: 1.2">AI-Driven Enterprise Security &amp; Ops</h1>
+      <p style="color: #94a3b8; font-size: 24px; margin-top: 12px; padding: 0; line-height: 1.5">Securing the Future of Business in the AI Era</p>
+    </div>
+
+    
+    <div class="feature-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; width: 100%">
+      
+      <div class="feature-card" style="background-color: #111118; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 32px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; height: 280px">
+        <div style="width: 48px; height: 48px; background-color: rgba(168, 85, 247, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px">
+          <svg width="24" height="24" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #a855f7">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2v6h-2v-6h2v-6z" fill="currentColor">
+          </svg>
+        </div>
+        <h3 style="color: #ffffff; font-size: 24px; font-weight: 600; margin: 0 0 12px 0">Secure Core</h3>
+        <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0">AI-powered threat detection and real-time anomaly identification for critical infrastructure.</p>
+      </div>
+
+      
+      <div class="feature-card" style="background-color: #111118; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 32px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; height: 280px">
+        <div style="width: 48px; height: 48px; background-color: rgba(236, 72, 153, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px">
+          <svg width="24" height="24" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #ec4899">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2v6h-2v-6h2v-6z" fill="currentColor">
+          </svg>
+        </div>
+        <h3 style="color: #ffffff; font-size: 24px; font-weight: 600; margin: 0 0 12px 0">Intelligent Automation</h3>
+        <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0">Automate complex operational tasks and incident response with AI-driven workflows.</p>
+      </div>
+
+      
+      <div class="feature-card" style="background-color: #111118; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 32px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; height: 280px">
+        <div style="width: 48px; height: 48px; background-color: rgba(168, 85, 247, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px">
+          <svg width="24" height="24" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #a855f7">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2v6h-2v-6h2v-6z" fill="currentColor">
+          </svg>
+        </div>
+        <h3 style="color: #ffffff; font-size: 24px; font-weight: 600; margin: 0 0 12px 0">Predictive Analytics</h3>
+        <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0">Leverage AI to forecast potential security breaches and operational inefficiencies.</p>
+      </div>
+    </div>
+  </div>
+<div class="footer">Slide 1</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; width: 100vw; overflow: hidden">
+  <div style="position: absolute; top: 5%; width: 90%; text-align: center">
+    <h1 style="font-size: 48px; font-weight: 700; margin-bottom: 8px">AI Expands Attack Surface 30%</h1>
+    <p style="font-size: 20px; color: #94a3b8">Cybersecurity Challenges in the AI Era</p>
+  </div>
+
+  <div style="position: relative; width: 600px; height: 600px; display: flex; justify-content: center; align-items: center">
+    
+    <svg width="100%" height="100%" viewbox="0 0 600 600" style="position: absolute; top: 0; left: 0">
+      <defs>
+        
+          <stop offset="0%" stop-color="#a855f7" stop-opacity="0.4"></stop>
+          <stop offset="100%" stop-color="#a855f7" stop-opacity="0"></stop>
+        
+        
+          <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"></stop>
+          <stop offset="100%" stop-color="#ec4899" stop-opacity="0"></stop>
+        
+      </defs>
+      
+      <line x1="200" y1="0" x2="200" y2="600" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="400" y1="0" x2="400" y2="600" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="0" y1="200" x2="600" y2="200" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="0" y1="400" x2="600" y2="400" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+
+      
+      
+      <circle cx="100" cy="500" r="15" fill="rgba(255,255,255,0.3)">
+      
+      <circle cx="450" cy="480" r="20" fill="rgba(255,255,255,0.4)">
+      
+      <circle cx="150" cy="120" r="18" fill="rgba(255,255,255,0.35)">
+      
+      <g transform="translate(300, 100)">
+        <circle cx="100" cy="100" r="40" fill="rgba(168,85,247,0.2)">
+        <text x="100" y="100" dy=".3em" text-anchor="middle" font-size="16" font-weight="600" fill="#ffffff">YOUR COMPANY</text>
+      </g>
+    </svg>
+
+    
+    <div style="position: absolute; left: -80px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #64748b; white-space: nowrap">Cybersecurity Maturity</div>
+    <div style="position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #64748b">AI Integration Level</div>
+  </div>
+
+  
+  <div style="position: absolute; bottom: 10%; left: 5%; font-size: 16px; color: #64748b; line-height: 1.8">
+    <p>• AI workloads expand attack surface by 30%.</p>
+    <p>• 20% cybersecurity talent deficit hinders defense.</p>
+    <p>• 10+ tools cause 80% alert fatigue.</p>
+  </div>
+
+  
+  <div style="position: absolute; bottom: 5%; right: 5%; font-size: 14px; color: #64748b">2</div>
+
+  
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.2;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.2;
+      }
+    }
+  
+<div class="footer">Slide 2</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px; position: relative; overflow: hidden">
+  <div class="split-container" style="display: flex; width: 100%; height: 100%">
+    <div class="split-panel" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding-right: 40px">
+      <h1 class="title" style="font-size: 48px; font-weight: bold; margin-bottom: 16px; color: #ffffff">AI Security Market: $350B+ Opportunity</h1>
+      <p class="subtitle" style="font-size: 20px; color: #94a3b8; margin-bottom: 40px"></p>
+      <div class="content-points" style="font-size: 24px; color: #ffffff; line-height: 1.6">
+        <ul style="padding: 0">
+          <li style="margin-bottom: 20px">Global Cyber &amp; AI Ops: <strong style="color: #a855f7">$350B-$400B</strong> TAM</li>
+          <li style="margin-bottom: 20px">Enterprise AI Security: <strong style="color: #ec4899">$120B-$150B</strong> SAM</li>
+          <li style="margin-bottom: 20px">Targeted Adoption: <strong style="color: #a855f7">$1B-$2B</strong> SOM</li>
+        </ul>
+      </div>
+    </div>
+    <div class="split-panel" style="flex: 1; display: flex; justify-content: center; align-items: flex-end; position: relative; padding-left: 40px">
+      <div class="chart-container" style="position: absolute; bottom: 0; right: 0; width: 50%; height: 60%">
+        <div class="chart-slot" data-chart-id="chart-3" style="width: 100%; height: 100%"></div>
+      </div>
+      <div class="visual-elements" style="position: absolute; bottom: 0; right: 0; width: 50%; height: 60%; display: flex; justify-content: center; align-items: flex-end; transform: translate(-20%, -10%)">
+        <svg width="400" height="400" viewbox="0 0 400 400" style="position: absolute; bottom: 0; right: 0">
+          <defs>
+            
+              <stop offset="0%"></stop>
+              <stop offset="100%"></stop>
+            
+            
+              <stop offset="0%"></stop>
+              <stop offset="100%"></stop>
+            
+            
+              <stop offset="0%"></stop>
+              <stop offset="100%"></stop>
+            
+          </defs>
+          <circle cx="200" cy="200" r="190" fill="url(#grad-outer)" style="mix-blend-mode: screen">
+          <circle cx="200" cy="200" r="140" fill="url(#grad-middle)" style="mix-blend-mode: screen">
+          <circle cx="200" cy="200" r="90" fill="url(#grad-inner)" style="mix-blend-mode: screen">
+        </svg>
+        <div style="position: absolute; top: 50px; left: 50px; z-index: 10">
+          <div class="metric" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 30px">
+            <div class="metric-value" style="font-size: 56px; font-weight: bold; color: #a855f7">$350B+</div>
+            <div class="metric-label" style="font-size: 18px; color: #94a3b8; margin-top: 8px">Market Opportunity</div>
+          </div>
+          <div class="metric" style="display: flex; flex-direction: column; align-items: center">
+            <div class="metric-value" style="font-size: 40px; font-weight: bold; color: #ec4899">$120B</div>
+            <div class="metric-label" style="font-size: 16px; color: #94a3b8; margin-top: 6px">Enterprise Security</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="footer">Slide 3</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px">
+  <div class="slide-header" style="position: absolute; top: 60px; left: 60px">
+    <h1 style="font-size: 36px; font-weight: 700; margin: 0">Security Tool Sprawl Strains Teams</h1>
+    <p style="font-size: 20px; color: #94a3b8; margin-top: 8px">The hidden costs of fragmented security stacks.</p>
+  </div>
+
+  <div class="content-area" style="position: relative; height: calc(100% - 180px); display: flex; justify-content: center; align-items: center; flex-direction: column">
+    <div class="feature-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; position: relative; width: 100%; max-width: 1200px">
+
+      
+      <div class="feature-card" style="background-color: #111118; border-radius: 16px; padding: 32px; display: flex; align-items: center; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08)">
+        <div class="card-icon" style="width: 80px; height: 80px; border-radius: 50%; background-color: rgba(168, 85, 247, 0.1); display: flex; justify-content: center; align-items: center; margin-right: 32px">
+          <svg width="40" height="40" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #a855f7">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm0-14c-1.105 0-2 .895-2 2v4c0 1.105.895 2 2 2s2-.895 2-2V8c0-1.105-.895-2-2-2z" fill="currentColor">
+          </svg>
+        </div>
+        <div class="card-content">
+          <p class="metric-value" style="font-size: 48px; font-weight: 700; line-height: 1; margin: 0; color: #ffffff">10-30+</p>
+          <p class="metric-label" style="font-size: 18px; color: #94a3b8; margin-top: 8px">Security Tools</p>
+          <p class="metric-label" style="font-size: 16px; color: #64748b; margin-top: 4px">Alert Fatigue</p>
+        </div>
+      </div>
+
+      
+      <div class="feature-card" style="background-color: #111118; border-radius: 16px; padding: 32px; display: flex; align-items: center; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08)">
+        <div class="card-icon" style="width: 80px; height: 80px; border-radius: 50%; background-color: rgba(236, 72, 153, 0.1); display: flex; justify-content: center; align-items: center; margin-right: 32px">
+          <svg width="40" height="40" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #ec4899">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm0-14c-1.105 0-2 .895-2 2v4c0 1.105.895 2 2 2s2-.895 2-2V8c0-1.105-.895-2-2-2z" fill="currentColor">
+          </svg>
+        </div>
+        <div class="card-content">
+          <p class="metric-value" style="font-size: 48px; font-weight: 700; line-height: 1; margin: 0; color: #ffffff">20-30%</p>
+          <p class="metric-label" style="font-size: 18px; color: #94a3b8; margin-top: 8px">Analyst Deficit</p>
+          <p class="metric-label" style="font-size: 16px; color: #64748b; margin-top: 4px">Skilled Analysts</p>
+        </div>
+      </div>
+
+      
+      <div class="feature-card" style="background-color: #111118; border-radius: 16px; padding: 32px; display: flex; align-items: center; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); grid-column: 1 / -1; justify-content: center; max-width: 600px; margin-top: 20px">
+        <div class="card-icon" style="width: 80px; height: 80px; border-radius: 50%; background-color: rgba(168, 85, 247, 0.1); display: flex; justify-content: center; align-items: center; margin-right: 32px">
+          <svg width="40" height="40" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #a855f7">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm0-14c-1.105 0-2 .895-2 2v4c0 1.105.895 2 2 2s2-.895 2-2V8c0-1.105-.895-2-2-2z" fill="currentColor">
+          </svg>
+        </div>
+        <div class="card-content">
+          <p class="metric-value" style="font-size: 36px; font-weight: 700; line-height: 1; margin: 0; color: #ffffff">Legacy SIEM/SOAR</p>
+          <p class="metric-label" style="font-size: 18px; color: #94a3b8; margin-top: 8px">Fail Modern Architectures</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="chart-container" style="position: absolute; bottom: 60px; right: 60px; width: 300px; height: 200px; background-color: #111118; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center">
+      <div class="chart-slot" data-chart-id="chart-4" style="width: 80%; height: 80%"></div>
+    </div>
+  </div>
+<div class="footer">Slide 4</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px; position: relative">
+  <div style="position: absolute; top: 60px; left: 60px; font-size: 48px; font-weight: 700; line-height: 1.2">
+    AI Platform: 50%+ MTTR Reduction
+  </div>
+
+  <div class="chart-container" style="position: absolute; top: 180px; left: 60px; width: calc(100% - 120px); height: 300px; display: flex; justify-content: center; align-items: center">
+    <div class="chart-slot" data-chart-id="chart-5" style="width: 80%; height: 100%; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; display: flex; justify-content: center; align-items: center; color: #64748b; font-size: 24px">
+      Chart Placeholder
+    </div>
+  </div>
+
+  <div style="position: absolute; bottom: 60px; left: 60px; width: calc(100% - 120px); display: flex; justify-content: space-between; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div class="glow-card" style="width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0) 70%); display: flex; justify-content: center; align-items: center; border: 2px solid rgba(255, 255, 255, 0.1)">
+        <svg width="30" height="30" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #a855f7">
+          <path d="M20 6L9 17L4 12L5.40833 10.5917L9 14.175L18.5917 4.58333L20 6Z" fill="currentColor">
+        </svg>
+      </div>
+      <p style="margin-top: 16px; color: #ffffff; font-size: 18px; font-weight: 600">50%+ MTTR Reduction</p>
+      <p style="color: #94a3b8; font-size: 14px">AI automation</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div class="glow-card" style="width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, rgba(236, 72, 153, 0) 70%); display: flex; justify-content: center; align-items: center; border: 2px solid rgba(255, 255, 255, 0.1)">
+        <svg width="25" height="25" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #ec4899">
+          <path d="M20 6L9 17L4 12L5.40833 10.5917L9 14.175L18.5917 4.58333L20 6Z" fill="currentColor">
+        </svg>
+      </div>
+      <p style="margin-top: 16px; color: #ffffff; font-size: 18px; font-weight: 600">30%+ Threat Precision</p>
+      <p style="color: #94a3b8; font-size: 14px">Increases accuracy</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div class="glow-card" style="width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%); display: flex; justify-content: center; align-items: center; border: 2px solid rgba(255, 255, 255, 0.08)">
+        <div style="width: 20px; height: 20px; background-color: #64748b; border-radius: 50%"></div>
+      </div>
+      <p style="margin-top: 16px; color: #ffffff; font-size: 18px; font-weight: 600">40%+ SOC Workflows</p>
+      <p style="color: #94a3b8; font-size: 14px">Automates tasks</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div class="glow-card" style="width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0) 70%); display: flex; justify-content: center; align-items: center; border: 2px solid rgba(255, 255, 255, 0.08)">
+        <div style="width: 20px; height: 20px; background-color: #64748b; border-radius: 50%"></div>
+      </div>
+      <p style="margin-top: 16px; color: #ffffff; font-size: 18px; font-weight: 600">99.9% Uptime</p>
+      <p style="color: #94a3b8; font-size: 14px">Reliability achieved</p>
+    </div>
+  </div>
+
+  <div style="position: absolute; bottom: 60px; left: 60px; width: calc(100% - 120px); height: 1px; background-color: rgba(255, 255, 255, 0.1)"></div>
+
+  <span style="position: absolute; bottom: 30px; right: 60px; font-size: 14px; color: #64748b">05</span>
+<div class="footer">Slide 5</div></section>
+    <section class="slide layout-chart">
+      <h2>AI Targets 50% MTTR Reduction</h2>
+      
+      <div class="content">
+        
+    <div>
+      <ul><li>AI automation targets &gt;50% MTTR reduction and &gt;30% precision boost.</li></ul>
+    </div>
+    
+        <div class="chart-container">
+          <div class="chart-slot" data-chart-id="chart-6"></div>
+        </div>
+        
+      </div>
+      <div class="footer">Slide 6</div>
+    </section>
+    <section class="slide" style="background-color: #0a0a0f; color: #ffffff; position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden">
+  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex">
+    
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding-left: 64px; padding-bottom: 64px">
+      
+      <div style="width: 80%; height: 20%; margin-bottom: 32px; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px"></div>
+
+      
+      <h1 style="font-size: 48px; font-weight: 700; margin: 0; line-height: 1.1">5-Year Global Rollout: 50+ Markets</h1>
+
+      
+      <p style="font-size: 20px; font-weight: 500; color: #94a3b8; margin-top: 16px; margin-bottom: 0">
+        Pilot phase to 50+ markets within 5 years.
+      </p>
+    </div>
+
+    
+    <div style="flex: 2; display: flex; justify-content: center; align-items: center; position: relative; padding-right: 64px; padding-bottom: 64px">
+      
+      <div class="chart-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%">
+        <div class="chart-slot" data-chart-id="chart-7" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center">
+          
+          <svg width="100%" height="100%" viewbox="0 0 500 500" style="overflow: visible">
+            <defs>
+              
+                <stop offset="0%"></stop>
+                <stop offset="100%"></stop>
+              
+               
+                <stop offset="0%"></stop>
+                <stop offset="100%"></stop>
+              
+            </defs>
+
+            
+            <circle cx="250" cy="250" r="200" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2">
+            
+            <circle cx="250" cy="250" r="200" fill="url(#glowGradient1)" opacity="0.5">
+
+            
+            <circle cx="250" cy="250" r="150" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2">
+            
+            <circle cx="250" cy="250" r="150" fill="url(#glowGradient2)" opacity="0.5">
+
+            
+            <circle cx="250" cy="250" r="100" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2">
+            
+            <circle cx="250" cy="250" r="100" fill="url(#glowGradient1)" opacity="0.5">
+
+            
+            <circle cx="250" cy="250" r="50" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2">
+             
+            <circle cx="250" cy="250" r="50" fill="url(#glowGradient2)" opacity="0.5">
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="footer">Slide 7</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px; display: flex; flex-direction: column; justify-content: space-between; height: 100vh">
+  <div style="display: flex; flex-direction: column; align-items: flex-start">
+    <h1 style="font-size: 48px; font-weight: 700; margin-bottom: 16px; color: #ffffff">Enterprise Security</h1>
+    <p style="font-size: 24px; color: #94a3b8; margin-bottom: 40px">Targeting High-Value Sectors with AI Automation</p>
+  </div>
+
+  <div class="chart-container" style="width: 100%; height: 300px; margin-bottom: 40px; display: flex; justify-content: center">
+    <div class="chart-slot" data-chart-id="chart-8" style="width: 80%; height: 100%; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 18px">
+      (Chart Placeholder for chart-8)
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; width: 100%">
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #a855f7; margin-bottom: 16px">💡</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Addressing 10-30+ fragmented security tools</p>
+      <p style="font-size: 14px; color: #64748b">Consolidate and simplify your security stack.</p>
+    </div>
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #ec4899; margin-bottom: 16px">⏳</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Mitigating 20-30% security analyst shortage</p>
+      <p style="font-size: 14px; color: #64748b">Automate repetitive tasks and empower your team.</p>
+    </div>
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #a855f7; margin-bottom: 16px">🏢</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Targeting regulated sectors: Telecom, Finance, Mfg</p>
+      <p style="font-size: 14px; color: #64748b">Meet stringent compliance requirements with ease.</p>
+    </div>
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #ec4899; margin-bottom: 16px">🤖</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Automating threat detection &amp; response</p>
+      <p style="font-size: 14px; color: #64748b">Real-time, intelligent threat management.</p>
+    </div>
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #a855f7; margin-bottom: 16px">📄</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Streamlining compliance reporting</p>
+      <p style="font-size: 14px; color: #64748b">Effortless generation of audit-ready reports.</p>
+    </div>
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; justify-content: space-between">
+      <div style="font-size: 24px; color: #ec4899; margin-bottom: 16px">🚀</div>
+      <p style="font-size: 16px; color: #ffffff; font-weight: 500; margin-bottom: 8px">Outperforming legacy SIEM/SOAR, Cloud, MSSPs</p>
+      <p style="font-size: 14px; color: #64748b">Superior performance and cost-effectiveness.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; color: #64748b; font-size: 14px; margin-top: 20px">
+    8
+  </div>
+<div class="footer">Slide 8</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 40px; position: relative; overflow: hidden">
+  <div style="position: absolute; top: 40px; left: 40px; font-size: 24px; font-weight: 600; color: #ffffff">60+ Years Scaling Tech &amp; AI</div>
+  <div style="position: absolute; top: 40px; right: 40px; font-size: 16px; color: #94a3b8">09</div>
+
+  <div class="chart-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; display: flex; justify-content: center; align-items: center">
+    
+    <svg width="100%" height="100%" viewbox="0 0 600 600" style="position: absolute; top: 0; left: 0">
+      <line x1="200" y1="0" x2="200" y2="600" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="400" y1="0" x2="400" y2="600" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="0" y1="200" x2="600" y2="200" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+      <line x1="0" y1="400" x2="600" y2="400" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+    </svg>
+
+    
+    <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #64748b">Experience</div>
+    <div style="position: absolute; top: 50%; right: 30px; transform: translateY(-50%) rotate(-90deg); font-size: 14px; color: #64748b">Recognition</div>
+
+    
+    <div class="metric" style="position: absolute; top: 100px; left: 100px; text-align: center; transform: translate(-50%, -50%)">
+      <div class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">60+</div>
+      <div class="metric-label" style="font-size: 14px; color: #94a3b8; margin-top: 8px">Years Enterprise Tech Scaling</div>
+    </div>
+
+    
+    <div class="metric glow-card" style="position: absolute; top: 100px; right: 100px; text-align: center; transform: translate(50%, -50%)">
+      <div class="glow-effect" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle, rgba(236,72,153,0.3) 0%, rgba(0,0,0,0) 60%); z-index: -1"></div>
+      <div class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff; position: relative; z-index: 1">Gartner/IDC</div>
+      <div class="metric-label" style="font-size: 14px; color: #94a3b8; margin-top: 8px; position: relative; z-index: 1">Recognized AI &amp; Cloud Advisors</div>
+    </div>
+
+    
+    <div class="metric" style="position: absolute; bottom: 100px; left: 100px; text-align: center; transform: translate(-50%, 50%)">
+      <div class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">25+</div>
+      <div class="metric-label" style="font-size: 14px; color: #94a3b8; margin-top: 8px">AI Specialists</div>
+    </div>
+
+    
+    <div class="metric" style="position: absolute; bottom: 100px; right: 100px; text-align: center; transform: translate(50%, 50%)">
+      <div class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">ISO 27001</div>
+      <div class="metric-label" style="font-size: 14px; color: #94a3b8; margin-top: 8px">Compliance Roadmap</div>
+    </div>
+  </div>
+<div class="footer">Slide 9</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 80px; position: relative; overflow: hidden">
+  <div style="position: absolute; top: 30px; left: 50px; font-size: 24px; font-weight: 600; color: #94a3b8">10</div>
+
+  <div style="margin-bottom: 60px">
+    <h1 style="font-size: 48px; font-weight: 700; margin: 0; color: #ffffff">ISO 27001, SOC 2, GDPR Compliance</h1>
+    <p style="font-size: 20px; color: #94a3b8; margin-top: 10px"></p>
+  </div>
+
+  <div class="problem-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; max-width: 1000px; margin: 0 auto">
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 30px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: center">
+      <div class="glow-card" style="width: 60px; height: 60px; border-radius: 12px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative">
+        <div style="width: 40px; height: 40px; background-color: rgba(168, 85, 247, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center">
+          <span style="font-size: 20px; font-weight: 600; color: #a855f7">1</span>
+        </div>
+      </div>
+      <h3 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: #ffffff">Secure-by-design</h3>
+      <p style="font-size: 16px; color: #94a3b8; line-height: 1.6">architecture with 24/7 monitoring.</p>
+    </div>
+
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 30px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: center">
+      <div class="glow-card" style="width: 60px; height: 60px; border-radius: 12px; background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0) 70%); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative">
+        <div style="width: 40px; height: 40px; background-color: rgba(236, 72, 153, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center">
+          <span style="font-size: 20px; font-weight: 600; color: #ec4899">2</span>
+        </div>
+      </div>
+      <h3 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: #ffffff">End-to-end encryption</h3>
+      <p style="font-size: 16px; color: #94a3b8; line-height: 1.6">and RBAC implemented.</p>
+    </div>
+
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 30px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: center">
+      <div class="glow-card" style="width: 60px; height: 60px; border-radius: 12px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative">
+        <div style="width: 40px; height: 40px; background-color: rgba(168, 85, 247, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center">
+          <span style="font-size: 20px; font-weight: 600; color: #a855f7">3</span>
+        </div>
+      </div>
+      <h3 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: #ffffff">Data isolation</h3>
+      <p style="font-size: 16px; color: #94a3b8; line-height: 1.6">and strict access logging.</p>
+    </div>
+
+    <div class="feature-card" style="background-color: #111118; border-radius: 12px; padding: 30px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: center">
+      <div class="glow-card" style="width: 60px; height: 60px; border-radius: 12px; background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0) 70%); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative">
+        <div style="width: 40px; height: 40px; background-color: rgba(236, 72, 153, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center">
+          <span style="font-size: 20px; font-weight: 600; color: #ec4899">4</span>
+        </div>
+      </div>
+      <h3 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: #ffffff">Targeting standards</h3>
+      <p style="font-size: 16px; color: #94a3b8; line-height: 1.6">ISO 27001, SOC 2 Type II, GDPR.</p>
+    </div>
+  </div>
+<div class="footer">Slide 10</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px">
+  <div style="position: relative; width: 100%; height: 100%">
+    
+    <h1 style="font-size: 48px; font-weight: 700; margin-bottom: 20px; color: #ffffff">$18.7M ARR with 173% CAGR</h1>
+    <p style="font-size: 20px; color: #94a3b8; margin-bottom: 60px">Project Milestones</p>
+
+    
+    <div style="position: relative; width: 100%; height: 400px; display: flex; justify-content: space-between; align-items: flex-start">
+
+      
+      <div style="display: flex; flex-direction: column; align-items: center; position: relative; top: 0">
+        <div class="glow-card" style="width: 60px; height: 60px; border-radius: 50%; background-color: #a855f7; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); z-index: 2">
+          <span style="font-size: 24px; font-weight: 700">Q1</span>
+        </div>
+        <div style="margin-top: 20px; text-align: center">
+          <p style="font-size: 16px; color: #94a3b8; margin-bottom: 8px">2022</p>
+          <p style="font-size: 14px; color: #64748b">Foundation &amp; Initial Growth</p>
+        </div>
+      </div>
+
+      
+      <div style="display: flex; flex-direction: column; align-items: center; position: relative; top: 0">
+        <div class="glow-card" style="width: 60px; height: 60px; border-radius: 50%; background-color: #ec4899; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(236, 72, 153, 0.4); z-index: 2">
+          <span style="font-size: 24px; font-weight: 700">Q3</span>
+        </div>
+        <div style="margin-top: 20px; text-align: center">
+          <p style="font-size: 16px; color: #94a3b8; margin-bottom: 8px">2023</p>
+          <p style="font-size: 14px; color: #64748b">Scaling Operations</p>
+        </div>
+      </div>
+
+      
+      <div style="display: flex; flex-direction: column; align-items: center; position: relative; top: 0">
+        <div class="glow-card" style="width: 60px; height: 60px; border-radius: 50%; background-color: #a855f7; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); z-index: 2">
+          <span style="font-size: 24px; font-weight: 700">Q1</span>
+        </div>
+        <div style="margin-top: 20px; text-align: center">
+          <p style="font-size: 16px; color: #94a3b8; margin-bottom: 8px">2024</p>
+          <p style="font-size: 14px; color: #64748b">Market Expansion</p>
+        </div>
+      </div>
+
+      
+      <div style="display: flex; flex-direction: column; align-items: center; position: relative; top: 0">
+        <div class="glow-card" style="width: 60px; height: 60px; border-radius: 50%; background-color: #ec4899; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(236, 72, 153, 0.4); z-index: 2">
+          <span style="font-size: 24px; font-weight: 700">Q3</span>
+        </div>
+        <div style="margin-top: 20px; text-align: center">
+          <p style="font-size: 16px; color: #94a3b8; margin-bottom: 8px">2024</p>
+          <p style="font-size: 14px; color: #64748b">Global Reach</p>
+        </div>
+      </div>
+
+      
+      <div style="position: absolute; top: 30px; left: 0; right: 0; height: 2px; border-top: 2px dashed #333; z-index: 1"></div>
+    </div>
+
+    
+    <div style="margin-top: 80px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px">
+      <div class="feature-card" style="background-color: #111118; padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08)">
+        <p class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">95%+</p>
+        <p class="metric-label" style="font-size: 16px; color: #94a3b8">Customer Retention</p>
+      </div>
+      <div class="feature-card" style="background-color: #111118; padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08)">
+        <p class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">55%</p>
+        <p class="metric-label" style="font-size: 16px; color: #94a3b8">MTTR Reduction</p>
+      </div>
+      <div class="feature-card" style="background-color: #111118; padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08)">
+        <p class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">40%+</p>
+        <p class="metric-label" style="font-size: 16px; color: #94a3b8">SOC Automation</p>
+      </div>
+      <div class="feature-card" style="background-color: #111118; padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08)">
+        <p class="metric-value" style="font-size: 36px; font-weight: 700; color: #ffffff">173%</p>
+        <p class="metric-label" style="font-size: 16px; color: #94a3b8">CAGR (2022-2024)</p>
+      </div>
+    </div>
+
+    
+    <div class="chart-container" style="position: absolute; bottom: 0; right: 0; width: 40%; height: 250px; background-color: #111118; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08)">
+      <div class="chart-slot" data-chart-id="chart-11" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #64748b">Chart Placeholder</div>
+    </div>
+  </div>
+<div class="footer">Slide 11</div></section><section class="slide" style="background-color: #0a0a0f; color: #ffffff; padding: 60px">
+  <div class="split-container" style="display: flex; height: 100%">
+    <div class="split-panel" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding-right: 40px; position: relative">
+      <h1 class="title" style="font-size: 48px; font-weight: 700; margin-bottom: 16px; line-height: 1.2">AI Security Market: <span style="color: #a855f7">$120B</span> Opportunity</h1>
+      <p class="subtitle" style="font-size: 20px; color: #94a3b8; margin-bottom: 32px; line-height: 1.5">
+        Addresses critical AI security needs.
+      </p>
+      <ul class="content-points" style="font-size: 18px; color: #94a3b8; line-height: 1.8; padding-left: 20px">
+        <li style="margin-bottom: 12px">Addresses critical AI security needs.</li>
+        <li style="margin-bottom: 12px">Projected <strong style="color: #ffffff">$120B+</strong> AI security market.</li>
+        <li style="margin-bottom: 12px">Platform reduces MTTR by <strong style="color: #ffffff">&gt;50%</strong>.</li>
+      </ul>
+      <div class="slide-number" style="position: absolute; bottom: 0; left: 0; font-size: 14px; color: rgba(255,255,255,0.3)">12</div>
+    </div>
+    <div class="split-panel" style="flex: 1; display: flex; justify-content: center; align-items: center; position: relative">
+      <div class="chart-container" style="position: relative; width: 500px; height: 500px; display: flex; justify-content: center; align-items: center">
+        
+        <svg width="100%" height="100%" viewbox="0 0 500 500" style="position: absolute; top: 0; left: 0; z-index: 1">
+          <circle cx="250" cy="250" r="200" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2">
+          <text x="250" y="250" text-anchor="middle" dominant-baseline="middle" fill="#94a3b8" font-size="24" font-weight="600" dy="-10">TAM</text>
+        </svg>
+        
+        <svg width="100%" height="100%" viewbox="0 0 500 500" style="position: absolute; top: 0; left: 0; z-index: 2">
+          <circle cx="250" cy="250" r="140" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2">
+          <text x="250" y="250" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-size="28" font-weight="700" dy="-10">SAM</text>
+        </svg>
+        
+        <svg width="100%" height="100%" viewbox="0 0 500 500" style="position: absolute; top: 0; left: 0; z-index: 3">
+          <circle cx="250" cy="250" r="80" fill="none" stroke="url(#purplePinkGradient)" stroke-width="4">
+          <defs>
+            
+              <stop offset="0%"></stop>
+              <stop offset="100%"></stop>
+            
+          </defs>
+          <text x="250" y="250" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-size="36" font-weight="800" dy="-10">SOM</text>
+        </svg>
+
+        
+        <div class="connector-label" style="position: absolute; right: 10%; top: 50%; transform: translateY(-50%); text-align: right; z-index: 4">
+          <div style="font-size: 20px; color: #ffffff; font-weight: 700">$120B</div>
+          <div style="font-size: 16px; color: #94a3b8; margin-top: 4px">Market Size</div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="footer">Slide 12</div></section>
+
+  /* Basic font import for fallback */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap');
+
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .split-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 60px; /* Consistent padding */
+    box-sizing: border-box;
+  }
+
+  .split-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start; /* Default to left alignment for content panel */
+    position: relative;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .split-panel:nth-child(2) {
+    align-items: center; /* Center alignment for visual panel */
+  }
+
+  .title {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: #ffffff;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 32px;
+  }
+
+  .content-points {
+    font-size: 18px;
+    color: #94a3b8;
+    line-height: 1.8;
+    padding-left: 20px;
+  }
+
+  .content-points li {
+    margin-bottom: 12px;
+  }
+
+  .content-points strong {
+    color: #ffffff;
+  }
+
+  .slide-number {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .chart-container {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .chart-container svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .chart-container text {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .connector-label {
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: right;
+    z-index: 4;
+  }
+
+  .connector-label div:first-child {
+    font-size: 20px;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .connector-label div:last-child {
+    font-size: 16px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  </div>
+  <script>
+    const charts = [{"id": "chart-3", "config": {"type": "doughnut", "data": {"labels": ["SOM ($1.5B)", "SAM ($150B)", "TAM ($400B)"], "datasets": [{"label": "Value", "data": [1.5, 148.5, 250.0], "backgroundColor": "#0F766E", "borderColor": "#0F766E", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-4", "config": {"type": "bar", "data": {"labels": ["Period 1", "Period 2", "Period 3"], "datasets": [{"label": "% Deficit", "data": [25.0, 25.0, 25.0], "backgroundColor": "#EF4444", "borderColor": "#EF4444", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-5", "config": {"type": "bar", "data": {"labels": ["MTTR Reduction", "Threat Precision Increase", "SOC Workflow Automation", "Uptime Reliability"], "datasets": [{"label": "% Improveme\u2026", "data": [55.0, 35.0, 45.0, 99.9], "backgroundColor": "#0F766E", "borderColor": "#0F766E", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-6", "config": {"type": "bar", "data": {"labels": ["MTTR Reduction", "Detection Precision", "SOC Workflow Automation", "Uptime"], "datasets": [{"label": "Target Impr\u2026", "data": [50.0, 30.0, 40.0, 99.9], "backgroundColor": "#0F766E", "borderColor": "#0F766E", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-7", "config": {"type": "line", "data": {"labels": ["Pilot Phase", "Early Commercialization", "Vertical Expansion", "International Growth", "Global Scale"], "datasets": [{"label": "Market Pene\u2026", "data": [0.95, 2.53, 3.075, 4.0, 4.65], "backgroundColor": "#0F766E", "borderColor": "#0F766E", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-8", "config": {"type": "bar", "data": {"labels": ["Telecom", "Finance", "Manufacturing", "Healthcare", "Government"], "datasets": [{"label": "$B (Annual \u2026", "data": [15.5, 12.8, 10.2, 8.5, 7.1], "backgroundColor": "#0369A1", "borderColor": "#0369A1", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}, {"id": "chart-11", "config": {"type": "bar", "data": {"labels": ["2022", "2023", "2024"], "datasets": [{"label": "$M", "data": [15.0, 28.0, 45.0], "backgroundColor": "#0F766E", "borderColor": "#0F766E", "fill": false}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}}}];
+    charts.forEach(cfg => {
+      let canvas = document.getElementById(cfg.id);
+      if (!canvas) {
+        const slot = document.querySelector(`[data-chart-id="${cfg.id}"]`);
+        if (slot) {
+          canvas = document.createElement('canvas');
+          canvas.id = cfg.id;
+          slot.appendChild(canvas);
+        }
+      }
+      if (!canvas) return;
+      new Chart(canvas, cfg.config);
+    });
+  </script>
+</body>
+</html>

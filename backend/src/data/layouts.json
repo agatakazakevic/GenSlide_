@@ -1,0 +1,57 @@
+{
+  "layouts": [
+    {
+      "id": "cover-simple",
+      "name": "Cover Simple",
+      "category": "cover",
+      "aspect_ratio": "16:9",
+      "elements": [
+        { "id": "title", "type": "title", "x": 0.08, "y": 0.18, "w": 0.84, "h": 0.18 },
+        { "id": "subtitle_1", "type": "subtitle", "x": 0.08, "y": 0.38, "w": 0.84, "h": 0.1 },
+        { "id": "subtitle_2", "type": "subtitle", "x": 0.08, "y": 0.5, "w": 0.84, "h": 0.1 }
+      ]
+    },
+    {
+      "id": "title-bullets",
+      "name": "Title + Bullets",
+      "category": "content",
+      "aspect_ratio": "16:9",
+      "elements": [
+        { "id": "title", "type": "title", "x": 0.08, "y": 0.06, "w": 0.84, "h": 0.12 },
+        { "id": "bullets", "type": "bullets", "x": 0.1, "y": 0.24, "w": 0.8, "h": 0.6, "max_items": 5 }
+      ]
+    },
+    {
+      "id": "two-column-bullets",
+      "name": "Two Column Bullets",
+      "category": "content",
+      "aspect_ratio": "16:9",
+      "elements": [
+        { "id": "title", "type": "title", "x": 0.08, "y": 0.06, "w": 0.84, "h": 0.12 },
+        { "id": "left_bullets", "type": "bullets", "x": 0.08, "y": 0.24, "w": 0.38, "h": 0.6, "max_items": 5 },
+        { "id": "right_bullets", "type": "bullets", "x": 0.54, "y": 0.24, "w": 0.38, "h": 0.6, "max_items": 5 }
+      ]
+    },
+    {
+      "id": "title-body",
+      "name": "Title + Body",
+      "category": "content",
+      "aspect_ratio": "16:9",
+      "elements": [
+        { "id": "title", "type": "title", "x": 0.08, "y": 0.06, "w": 0.84, "h": 0.12 },
+        { "id": "body", "type": "body", "x": 0.1, "y": 0.26, "w": 0.8, "h": 0.6 }
+      ]
+    },
+    {
+      "id": "image-left-text",
+      "name": "Image Left + Text",
+      "category": "visual",
+      "aspect_ratio": "16:9",
+      "elements": [
+        { "id": "title", "type": "title", "x": 0.08, "y": 0.06, "w": 0.84, "h": 0.12 },
+        { "id": "image", "type": "image", "x": 0.08, "y": 0.24, "w": 0.36, "h": 0.6 },
+        { "id": "body", "type": "body", "x": 0.5, "y": 0.24, "w": 0.42, "h": 0.6 }
+      ]
+    }
+  ]
+}

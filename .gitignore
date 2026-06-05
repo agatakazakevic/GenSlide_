@@ -1,0 +1,28 @@
+# env/secrets
+.env
+**/.env
+!.env.example
+
+# python
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/.venv311/
+
+# node
+**/node_modules/
+**/dist/
+**/.vite/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# generated/temp
+/tmp/
+**/uploads/
+**/qdrant_storage/
+**/temp/
+**/*.log
+**/*.pptx

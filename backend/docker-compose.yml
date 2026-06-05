@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    ports:
+      - "9980:9980"
+    environment:
+      - domain=host\\.docker\\.internal:5050|localhost:5050|127\\.0\\.0\\.1:5050
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false --o:net.proto=IPv4
+    restart: unless-stopped

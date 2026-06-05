@@ -1,0 +1,35 @@
+# Advanced AI Deck Creator - Production Requirements
+
+# Core Framework
+fastapi>=0.115.0,<0.116
+uvicorn[standard]==0.24.0
+pydantic>=2.10.0,<3
+
+# PowerPoint Generation (CRITICAL)
+python-pptx==0.6.23
+
+# AI/LLM APIs
+openai>=1.40.0,<2
+google-genai==1.62.0
+
+# Async Support
+aiohttp==3.9.1
+
+# Compatibility pins
+anyio>=4.8.0,<5
+starlette>=0.38.6,<0.39
+protobuf==4.25.8
+
+# Image processing (aspect-ratio-preserving illustration placement)
+Pillow>=10.0.0
+
+# PDF Export (Playwright headless browser)
+playwright>=1.40.0
+
+# Database (PostgreSQL + pgvector RAG)
+psycopg2-binary>=2.9.9
+
+# Utilities
+python-dotenv==1.0.0
+python-multipart>=0.0.9
+PyPDF2==3.0.1
